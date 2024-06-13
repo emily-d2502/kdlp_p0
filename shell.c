@@ -1,16 +1,22 @@
+#define  _GNU_SOURCE
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 
-int main(void) {
+int main(void)
+{
+    do {
+        // Print current working directory
+        char *cwd = getcwd(NULL, 0);
+        printf("%s$ ", cwd);
+        free(cwd);
 
-    char *cwd = getcwd(NULL, 0);
-    printf("%s$ ", cwd);
+        // Read command from user
+        char*  line = NULL;
+        size_t len  = 0;
+        getline(&line, &len, stdin);
 
-    // do {
-
-    // } while (1);
+    } while (!feof(stdin));
     printf("\n");
-    free(cwd);
     return 0;
 }

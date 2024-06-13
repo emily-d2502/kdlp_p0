@@ -1,5 +1,5 @@
 COMPILER := clang
-COMPILER_FLAGS := -std=c99 -Weverything
+COMPILER_FLAGS := -std=c99 -Wextra -Wpedantic
 SRCS := shell.c
 OBJS=$(subst .c,.o,$(SRCS))
 HDRS := main.h
