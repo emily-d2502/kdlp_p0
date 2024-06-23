@@ -1,6 +1,6 @@
 COMPILER := clang
 COMPILER_FLAGS := -std=c99 -Wextra -Wpedantic
-SRCS := shell.c
+SRCS := shell.c utilities.c
 OBJS=$(subst .c,.o,$(SRCS))
 HDRS := main.h
 
