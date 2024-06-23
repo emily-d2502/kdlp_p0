@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include "utilities.h"
+#include "commands.h"
 
 int main(void)
 {
@@ -17,11 +18,9 @@ int main(void)
         size_t  len      = 0;
         ssize_t line_sz  = getline(&line, &len, stdin);
 
-        char *program = find_word(line, 0);
         if (line_sz > 1) {
-            printf("Unrecognized command: %s\n", program);
+            run_command(line, line_sz);
         }
-        free(program);
 
     } while (!feof(stdin));
     printf("\n");
