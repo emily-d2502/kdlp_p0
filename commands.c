@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 
 static void run_cd(int argc, char **argv) {
     if (argc > 2) {
@@ -52,6 +53,41 @@ static void run_exec_child(int argc, char **argv) {
     (void)argc;
 }
 
+static int isdelimiter(int c) {
+    return c == ':';
+}
+
+static void query_path(int argc, char **argv) {
+    char* path = getenv("PATH");
+    int idx = 0;
+    int start = -1;
+    while (start != idx) {
+        start = idx;
+        int i = find_first_of(&path[idx], isdelimiter);
+        idx += i + 1;
+
+        char *dir = substr(path, start, i == NPOS ? strlen(path): idx - 1);
+
+
+        // create file absolute path
+        int dir_len = strlen(dir);
+        char *file = (char *) malloc((dir_len + strlen(argv[0]) + 2) * sizeof(*file));
+        strcpy(file, dir); file[dir_len] = '/'; strcpy(&file[dir_len + 1], argv[0]);
+
+        struct stat stats;
+        if (stat(file, &stats) == 0) {
+            // file found
+            free(argv[0]);
+            argv[0] = file;
+            run_exec_child(argc, argv);
+            return;
+        }
+        free(dir);
+    }
+    printf("Unrecognized command: %s\n", argv[0]);
+}
+
+
 void run_command(const char* line, ssize_t line_sz) {
     char **argv;
     int argc = parse_command_line(line, &argv);
@@ -73,8 +109,9 @@ void run_command(const char* line, ssize_t line_sz) {
         run_exec_child(argc, argv);
         return;
     }
+    query_path(argc, argv);
 
-    printf("Unrecognized command: %s\n", argv[0]);
+
     for (int i = 0; i < argc; ++i) {
         free(argv[i]);
     }

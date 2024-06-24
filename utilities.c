@@ -4,8 +4,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#define NPOS (-1)
-
 // Finds 1st appearance of a char that comp returns true to
 int find_first_of(const char *str, int (*comp)(int)) {
     for (int i = 0; str[i] != '\0'; ++i) {
