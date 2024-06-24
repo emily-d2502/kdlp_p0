@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 
+
 // Finds 1st appearance of a char that comp returns true to
 int find_first_of(const char *str, int (*comp)(int)) {
     for (int i = 0; str[i] != '\0'; ++i) {
@@ -33,6 +34,17 @@ int find_last_not_of(const char *str, int (*comp)(int)) {
     }
     return ret;
 }
+
+int find_count(const char *str, int (*comp)(int)) {
+    int ret = 0;
+    for (int i = 0; str[i] != '\0'; ++i) {
+        if (comp(str[i])) {
+            ++ret;
+        }
+    }
+    return ret;
+}
+
 
 // need to free output
 char *substr(const char *str, int start, int end) {
