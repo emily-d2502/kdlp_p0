@@ -5,6 +5,9 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <errno.h>
 
 static void run_cd(int argc, char **argv) {
     if (argc > 2) {
@@ -87,10 +90,60 @@ static void query_path(int argc, char **argv) {
     printf("Unrecognized command: %s\n", argv[0]);
 }
 
+static int isuser(int c) {
+    return c == '~';
+}
+
+static char *substitutes_user(char *arg) {
+    int arg_len = strlen(arg);
+    int user_place = find_first_of(arg, isuser);
+    if (user_place == NPOS) {
+        return arg;
+    }
+
+    int start = user_place + 1;
+    int end = user_place + 1;
+    for (;arg[end] != '\0' && arg[end] != '/'; ++end);
+
+    if (start == end) {
+        char *home = getenv("HOME");
+        int home_len = strlen(home);
+        char *new_arg = (char *) malloc((arg_len + home_len + 1) * sizeof(*new_arg));
+        strcpy(new_arg, arg); // copy the whole thing
+        strcpy(&new_arg[user_place], home); // copy the home path
+        strcpy(&new_arg[user_place + home_len], &arg[end]); // copy the rest of the path
+        free(arg);
+        return new_arg;
+    }
+
+    struct passwd *pwd;
+    char *username_str = substr(arg, start, end);
+    pwd = getpwnam(username_str);
+    if (pwd == NULL) {
+        if (errno != 0) {
+            perror("getpwnam failed");
+            exit(0);
+        }
+        return arg;
+    }
+    free(username_str);
+
+    int home_len = strlen(pwd->pw_dir);
+    char *new_arg = (char *) malloc((arg_len + home_len - start + end) * sizeof(*new_arg));
+    strcpy(new_arg, arg); // copy the whole thing
+    strcpy(&new_arg[user_place], pwd->pw_dir); // copy the home path
+    strcpy(&new_arg[user_place + home_len], &arg[end]); // copy the rest of the path
+    free(arg);
+    return new_arg;
+}
+
 
 void run_command(const char* line, ssize_t line_sz) {
     char **argv;
     int argc = parse_command_line(line, &argv);
+    for (int i = 0; i < argc; ++i) {
+        argv[i] = substitutes_user(argv[i]);
+    }
 
 
     if (strcmp(argv[0], "cd") == 0) {
