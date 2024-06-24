@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <errno.h>
+#include <fcntl.h>
 
 static void run_cd(int argc, char **argv) {
     if (argc > 2) {
@@ -38,6 +39,49 @@ static void run_exec(int argc, char **argv) {
     perror("execv failed");
 }
 
+static void handle_redirection(int argc, char **argv) {
+    for (int i = argc - 1; i > 0; --i) {
+        if (strcmp(argv[i], ">") == 0) {
+            if (argv[i + 1] == NULL) {
+                printf("filename not found");
+                exit(0);
+            }
+
+            int file = open(argv[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            if (file == -1) {
+                perror("open failed");
+                exit(0);
+            }
+            dup2(file, STDOUT_FILENO);
+            break;
+        }
+    }
+    for (int i = argc - 1; i > 0; --i) {
+        if (strcmp(argv[i], "<") == 0) {
+            if (argv[i + 1] == NULL) {
+                printf("filename not found");
+                exit(0);
+            }
+
+            int file = open(argv[i + 1], O_RDONLY, 0666);
+            if (file == -1) {
+                perror("open failed");
+                exit(0);
+            }
+            dup2(file, STDIN_FILENO);
+            break;
+        }
+    }
+    for (int i = 0; i < argc; ++i) {
+        if (strcmp(argv[i], ">") == 0 || strcmp(argv[i], "<") == 0) {
+            for (int k = i; k < argc; ++k) {
+                argv[k] = NULL;
+            }
+            break;
+        }
+    }
+}
+
 static void run_exec_child(int argc, char **argv) {
     pid_t pid = fork();
 
@@ -46,6 +90,7 @@ static void run_exec_child(int argc, char **argv) {
         return;
     }
     if (pid == 0) {
+        handle_redirection(argc, argv);
         execv(argv[0], &argv[0]);
         perror("execv failed");
         exit(0);
@@ -137,14 +182,12 @@ static char *substitutes_user(char *arg) {
     return new_arg;
 }
 
-
 void run_command(const char* line, ssize_t line_sz) {
     char **argv;
     int argc = parse_command_line(line, &argv);
     for (int i = 0; i < argc; ++i) {
         argv[i] = substitutes_user(argv[i]);
     }
-
 
     if (strcmp(argv[0], "cd") == 0) {
         run_cd(argc, argv);
